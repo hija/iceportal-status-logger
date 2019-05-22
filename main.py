@@ -11,7 +11,10 @@ STATUS_URL = 'https://iceportal.de/api1/rs/status'
 
 ## Function to retrieve a json object from a URL
 def get_json_from_url(url):
-    req = requests.get(url)
+    try:
+        req = requests.get(url)
+    except Exception as e:
+        return {'error': str(e)}
     return req.json()
 
 ## Do one initial trip request to get information about the trip for better file naming
