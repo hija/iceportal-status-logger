@@ -17,21 +17,26 @@ def get_json_from_url(url):
         return {'error': str(e)}
     return req.json()
 
-## Do one initial trip request to get information about the trip for better file naming
-trip_data = get_json_from_url(TRIP_URL)['trip']
-now = datetime.datetime.now()
-file_name = now.strftime("%Y-%m-%d %H.%M") + f'_{trip_data["trainType"]}{trip_data["vzn"]}_{trip_data["stops"][0]["station"]["name"]}-{trip_data["stops"][len(trip_data["stops"])-1]["station"]["name"]}.jsonlines'
-# example for file_name: 2019-05-22 21:06_ICE635_Bremen Hbf-Nürnberg Hbf.jsonlines
-print(f'Logging to: {file_name}')
-
-fp = open(file_name, 'w', encoding='utf-8')
-jsonlines_writer = jsonlines.Writer(fp, flush=True)
-
 while True:
-    time.sleep(3) # Data gets refreshed about every 3 seconds
+    ## Do one initial trip request to get information about the trip for better file naming
+    trip_data = get_json_from_url(TRIP_URL)['trip']
+    now = datetime.datetime.now()
+    starting_station = trip_data["stops"][0]["station"]["name"]
+    file_name = now.strftime("%Y-%m-%d %H.%M") + f'_{trip_data["trainType"]}{trip_data["vzn"]}_{trip_data["stops"][0]["station"]["name"]}-{trip_data["stops"][len(trip_data["stops"])-1]["station"]["name"]}.jsonlines'
+    # example for file_name: 2019-05-22 21:06_ICE635_Bremen Hbf-Nürnberg Hbf.jsonlines
+    print(f'Logging to: {file_name}')
 
-    trip_data = get_json_from_url(TRIP_URL)
-    status_data = get_json_from_url(STATUS_URL)
-    complete_data = {'trip': trip_data, 'status': status_data, 'time': datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}
+    fp = open(file_name, 'w', encoding='utf-8')
+    jsonlines_writer = jsonlines.Writer(fp, flush=True)
 
-    jsonlines_writer.write(complete_data)
+    while True:
+        time.sleep(3) # Data gets refreshed about every 3 seconds
+
+        trip_data = get_json_from_url(TRIP_URL)
+        status_data = get_json_from_url(STATUS_URL)
+        complete_data = {'trip': trip_data, 'status': status_data, 'time': datetime.datetime.now().strftime("%Y-%m-%d %H:%M")}
+
+        jsonlines_writer.write(complete_data)
+
+        if trip_data['trip']["stops"][0]["station"]["name"] != starting_station:
+            break # We switched the train --> Start new file
